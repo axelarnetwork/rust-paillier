@@ -1,14 +1,13 @@
 use crate::BigInt;
-use rand::{rngs::OsRng, RngCore};
+use rand::RngCore;
 
 pub fn sample(bit_size: usize) -> BigInt {
     if bit_size == 0 {
         return BigInt::zero();
     }
-    let mut rng = OsRng::new().unwrap();
     let bytes = (bit_size - 1) / 8 + 1;
     let mut buf: Vec<u8> = vec![0; bytes];
-    rng.fill_bytes(&mut buf);
+    rand::thread_rng().fill_bytes(&mut buf);
     BigInt::from(&*buf) >> (bytes * 8 - bit_size)
 }
 
@@ -47,6 +46,14 @@ pub fn mod_sub(a: &BigInt, b: &BigInt, modulus: &BigInt) -> BigInt {
     // let sub_op = a_m - b_m + &modulus.gmp;
     // sub_op.mod_floor(&modulus.gmp).wrap()
     (a.modulus(modulus) - b.modulus(modulus)).modulus(modulus)
+}
+
+pub fn mod_add(a: &BigInt, b: &BigInt, modulus: &BigInt) -> BigInt {
+    (a.modulus(modulus) + b.modulus(modulus)).modulus(modulus)
+}
+
+pub fn mod_mul(x: &BigInt, y: &BigInt, n: &BigInt) -> BigInt {
+    (x.modulus(n) * y.modulus(n)).modulus(n)
 }
 
 pub fn try_from<T>(n: &BigInt) -> T

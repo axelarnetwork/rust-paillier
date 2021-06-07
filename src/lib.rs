@@ -16,6 +16,7 @@ pub use traits::*;
 // pub use curv::arithmetic::BigInt;
 pub type BigInt = gmp::mpz::Mpz; // `pub` only for examples
 mod bigint;
+pub mod zk;
 
 /// Main struct onto which most operations are added.
 pub struct Paillier;
