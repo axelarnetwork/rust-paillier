@@ -1,10 +1,11 @@
 //! Integral code supporting both scalars and vectors.
 
 use std::borrow::Borrow;
-use std::convert::TryFrom;
+// use std::convert::TryFrom;
 use std::marker::PhantomData;
 
 use super::{pack, unpack, EncodedCiphertext};
+use crate::bigint;
 use crate::traits::{Add, Decrypt, Encrypt, Mul, Rerandomize};
 use crate::{BigInt, Paillier, RawCiphertext, RawPlaintext};
 
@@ -74,7 +75,7 @@ where
 {
     fn decrypt(dk: &DK, c: C) -> u64 {
         let m = Self::decrypt(dk, RawCiphertext::from(&c.borrow().raw));
-        u64::try_from(&BigInt::from(m)).unwrap()
+        bigint::try_from(&BigInt::from(m))
     }
 }
 
@@ -317,7 +318,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use curv::arithmetic::traits::*;
+    // use curv::arithmetic::traits::*;
 
     use super::*;
     use crate::Keypair;

@@ -7,10 +7,10 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::traits::*;
 use crate::{
-    BigInt, DecryptionKey, EncryptionKey, Keypair, MinimalDecryptionKey, MinimalEncryptionKey,
-    Paillier, RawCiphertext, RawPlaintext,
+    bigint, BigInt, DecryptionKey, EncryptionKey, Keypair, MinimalDecryptionKey,
+    MinimalEncryptionKey, Paillier, RawCiphertext, RawPlaintext,
 };
-use curv::arithmetic::traits::*;
+// use curv::arithmetic::traits::*;
 
 impl Keypair {
     /// Generate default encryption and decryption keys.
@@ -135,7 +135,7 @@ pub struct PrecomputedRandomness(BigInt);
 
 impl Randomness {
     pub fn sample(ek: &EncryptionKey) -> Randomness {
-        Randomness(BigInt::sample_below(&ek.n))
+        Randomness(bigint::sample_below(&ek.n))
     }
 }
 
@@ -190,7 +190,7 @@ impl<'b> From<RawCiphertext<'b>> for BigInt {
 impl<'m, 'd> Encrypt<EncryptionKey, RawPlaintext<'m>, RawCiphertext<'d>> for Paillier {
     fn encrypt(ek: &EncryptionKey, m: RawPlaintext<'m>) -> RawCiphertext<'d> {
         let r = Randomness::sample(&ek);
-        let rn = BigInt::mod_pow(&r.0, &ek.n, &ek.nn);
+        let rn = r.0.powm(&ek.n, &ek.nn);
         let gm: BigInt = (m.0.borrow() as &BigInt * &ek.n + 1) % &ek.nn;
         let c = (gm * rn) % &ek.nn;
         RawCiphertext(Cow::Owned(c))
@@ -206,7 +206,7 @@ impl<'m, 'r, 'd>
         m: RawPlaintext<'m>,
         r: &'r Randomness,
     ) -> RawCiphertext<'d> {
-        let rn = BigInt::mod_pow(&r.0, &ek.n, &ek.nn);
+        let rn = r.0.powm(&ek.n, &ek.nn);
         let gm: BigInt = (m.0.borrow() as &BigInt * &ek.n + 1) % &ek.nn;
         let c = (gm * rn) % &ek.nn;
         RawCiphertext(Cow::Owned(c))
@@ -237,18 +237,18 @@ impl<'m, 'd> Encrypt<DecryptionKey, RawPlaintext<'m>, RawCiphertext<'d>> for Pai
         let dk_pp = &dk.p * &dk.p;
         let dk_qq = &dk.q * &dk.q;
         let dk_n = &dk.q * &dk.p;
-        let dk_ppinv = BigInt::mod_inv(&dk_pp, &dk_qq).unwrap();
+        let dk_ppinv = dk_pp.invert(&dk_qq).unwrap();
         let (mp, mq) = crt_decompose(m.0.borrow(), &dk_pp, &dk_qq);
         let (cp, cq) = join(
             || {
-                let rp = BigInt::sample_below(&dk.p);
-                let rnp = BigInt::mod_pow(&rp, &dk_n, &dk_pp);
+                let rp = bigint::sample_below(&dk.p);
+                let rnp = rp.powm(&dk_n, &dk_pp);
                 let gmp = (1 + mp * &dk_n) % &dk_pp; // TODO[Morten] maybe there's more to get here
                 (gmp * rnp) % &dk_pp
             },
             || {
-                let rq = BigInt::sample_below(&dk.q);
-                let rnq = BigInt::mod_pow(&rq, &dk_n, &dk_qq);
+                let rq = bigint::sample_below(&dk.q);
+                let rnq = rq.powm(&dk_n, &dk_qq);
                 let gmq = (1 + mq * &dk_n) % &dk_qq; // TODO[Morten] maybe there's more to get here
                 (gmq * rnq) % &dk_qq
             },
@@ -270,17 +270,17 @@ impl<'m, 'r, 'd>
         let dk_pp = &dk.p * &dk.p;
         let dk_qq = &dk.q * &dk.q;
         let dk_n = &dk.q * &dk.p;
-        let dk_ppinv = BigInt::mod_inv(&dk_pp, &dk_qq).unwrap();
+        let dk_ppinv = dk_pp.invert(&dk_qq).unwrap();
         let (mp, mq) = crt_decompose(m.0.borrow(), &dk_pp, &dk_qq);
         let (rp, rq) = crt_decompose(&r.0, &dk_pp, &dk_qq);
         let (cp, cq) = join(
             || {
-                let rnp = BigInt::mod_pow(&rp, &dk_n, &dk_pp);
+                let rnp = rp.powm(&dk_n, &dk_pp);
                 let gmp = (1 + mp * &dk_n) % &dk_pp; // TODO[Morten] maybe there's more to get here
                 (gmp * rnp) % &dk_pp
             },
             || {
-                let rnq = BigInt::mod_pow(&rq, &dk_n, &dk_qq);
+                let rnq = rq.powm(&dk_n, &dk_qq);
                 let gmq = (1 + mq * &dk_n) % &dk_qq; // TODO[Morten] maybe there's more to get here
                 (gmq * rnq) % &dk_qq
             },
@@ -315,15 +315,15 @@ impl<'ek, 'r> PrecomputeRandomness<&'ek EncryptionKey, &'r BigInt, PrecomputedRa
     for Paillier
 {
     fn precompute(ek: &'ek EncryptionKey, r: &'r BigInt) -> PrecomputedRandomness {
-        let rn = BigInt::mod_pow(r, &ek.n, &ek.nn);
+        let rn = r.powm(&ek.n, &ek.nn);
         PrecomputedRandomness(rn)
     }
 }
 
 impl<'c, 'd> Rerandomize<EncryptionKey, RawCiphertext<'c>, RawCiphertext<'d>> for Paillier {
     fn rerandomize(ek: &EncryptionKey, c: RawCiphertext<'c>) -> RawCiphertext<'d> {
-        let r = BigInt::sample_below(&ek.n);
-        let rn = BigInt::mod_pow(&r, &ek.n, &ek.nn);
+        let r = bigint::sample_below(&ek.n);
+        let rn = r.powm(&ek.n, &ek.nn);
         let d = (c.0.borrow() as &BigInt * rn) % &ek.nn;
         RawCiphertext(Cow::Owned(d))
     }
@@ -346,7 +346,7 @@ impl<'c, 'm> Decrypt<DecryptionKey, &'c RawCiphertext<'c>, RawPlaintext<'m>> for
         let dk_qq = &dk.q * &dk.q;
         let dk_pp = &dk.p * &dk.p;
         let dk_n = &dk.p * &dk.q;
-        let dk_pinv = BigInt::mod_inv(&dk.p, &dk.q).unwrap();
+        let dk_pinv = dk.p.invert(&dk.q).unwrap();
         let dk_qminusone = &dk.q - BigInt::one();
         let dk_pminusone = &dk.p - BigInt::one();
         let dk_hp = h(&dk.p, &dk_pp, &dk_n);
@@ -356,13 +356,13 @@ impl<'c, 'm> Decrypt<DecryptionKey, &'c RawCiphertext<'c>, RawPlaintext<'m>> for
         let (mp, mq) = join(
             || {
                 // process using p
-                let dp = BigInt::mod_pow(&cp, &dk_pminusone, &dk_pp);
+                let dp = cp.powm(&dk_pminusone, &dk_pp);
                 let lp = l(&dp, &dk.p);
                 (&lp * &dk_hp) % &dk.p
             },
             || {
                 // process using q
-                let dq = BigInt::mod_pow(&cq, &dk_qminusone, &dk_qq);
+                let dq = cq.powm(&dk_qminusone, &dk_qq);
                 let lq = l(&dq, &dk.q);
                 (&lq * &dk_hq) % &dk.q
             },
@@ -431,11 +431,9 @@ impl<'c, 'm, 'd> Mul<EncryptionKey, RawCiphertext<'c>, RawPlaintext<'m>, RawCiph
     for Paillier
 {
     fn mul(ek: &EncryptionKey, c: RawCiphertext<'c>, m: RawPlaintext<'m>) -> RawCiphertext<'d> {
-        RawCiphertext(Cow::Owned(BigInt::mod_pow(
-            c.0.borrow(),
-            m.0.borrow(),
-            &ek.nn,
-        )))
+        RawCiphertext(Cow::Owned(
+            (c.0.borrow() as &BigInt).powm(m.0.borrow(), &ek.nn),
+        ))
     }
 }
 
@@ -443,11 +441,9 @@ impl<'c, 'm, 'd> Mul<EncryptionKey, RawPlaintext<'m>, RawCiphertext<'c>, RawCiph
     for Paillier
 {
     fn mul(ek: &EncryptionKey, m: RawPlaintext<'m>, c: RawCiphertext<'c>) -> RawCiphertext<'d> {
-        RawCiphertext(Cow::Owned(BigInt::mod_pow(
-            c.0.borrow(),
-            m.0.borrow(),
-            &ek.nn,
-        )))
+        RawCiphertext(Cow::Owned(
+            (c.0.borrow() as &BigInt).powm(m.0.borrow(), &ek.nn),
+        ))
     }
 }
 
@@ -462,7 +458,7 @@ fn h(p: &BigInt, pp: &BigInt, n: &BigInt) -> BigInt {
     // compute L_p(.)
     let lp = l(&gp, p);
     // compute L_p(.)^{-1}
-    BigInt::mod_inv(&lp, p).unwrap()
+    lp.invert(p).unwrap()
 }
 
 fn l(u: &BigInt, n: &BigInt) -> BigInt {
@@ -486,7 +482,7 @@ where
     M2: Borrow<BigInt>,
     I: Borrow<BigInt>,
 {
-    let diff = BigInt::mod_sub(x2.borrow(), x1.borrow(), m2.borrow());
+    let diff = bigint::mod_sub(x2.borrow(), x1.borrow(), m2.borrow());
     //  let mut diff = (x2.borrow() - x1.borrow()) % m2.borrow();
     //  if NumberTests::is_negative(&diff) {
     //      diff += m2.borrow();
@@ -499,17 +495,17 @@ where
 pub fn extract_nroot(dk: &DecryptionKey, z: &BigInt) -> BigInt {
     let dk_n = &dk.p * &dk.q;
 
-    let dk_pinv = BigInt::mod_inv(&dk.p, &dk.q).unwrap();
+    let dk_pinv = dk.p.invert(&dk.q).unwrap();
     let dk_qminusone = &dk.q - BigInt::one();
     let dk_pminusone = &dk.p - BigInt::one();
 
     let dk_phi = &dk_pminusone * &dk_qminusone;
-    let dk_dn = BigInt::mod_inv(&dk_n, &dk_phi).unwrap();
+    let dk_dn = dk_n.invert(&dk_phi).unwrap();
     let (dk_dp, dk_dq) = crt_decompose(dk_dn, &dk_pminusone, &dk_qminusone);
     let (zp, zq) = crt_decompose(z, &dk.p, &dk.q);
 
-    let rp = BigInt::mod_pow(&zp, &dk_dp, &dk.p);
-    let rq = BigInt::mod_pow(&zq, &dk_dq, &dk.q);
+    let rp = zp.powm(&dk_dp, &dk.p);
+    let rq = zq.powm(&dk_dq, &dk.q);
 
     crt_recombine(rp, rq, &dk.p, &dk.q, &dk_pinv)
 }

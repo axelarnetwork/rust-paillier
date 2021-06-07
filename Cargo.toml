@@ -6,15 +6,18 @@ edition = "2018"
 [dependencies]
 rayon = "1.1"
 serde = { version = "1.0", features = ["derive"] }
-curv = { package = "curv-kzen", version = "0.7", default-features = false }
+# curv = { package = "curv-kzen", version = "0.7", default-features = false }
+# rust-gmp-kzen = { version = "0.5", features = ["serde_support"], optional = true }
+rust-gmp-kzen = { version = "0.5" }
+rand = "0"
 
 [dev-dependencies]
 bencher = "0.1"
 serde_json = "1.0"
-rand = "0.6"
+rand = "0"
 
-[features]
-default = ["curv/rust-gmp-kzen"]
+# [features]
+# default = ["curv/rust-gmp-kzen"]
 
 [[bench]]
 name = "arith"
