@@ -1,5 +1,5 @@
 use bencher::{benchmark_group, benchmark_main, Bencher};
-use curv::arithmetic::traits::*;
+// use curv::arithmetic::traits::*;
 
 use paillier::*;
 
@@ -31,7 +31,7 @@ pub fn bench_modarith(b: &mut Bencher) {
     let n: &BigInt = &BigInt::from_str_radix(N2048, 10).unwrap();
 
     b.iter(|| {
-        let _ = BigInt::mod_pow(p, q, n);
+        let _ = p.powm(q, n);
     });
 }
 

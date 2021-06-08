@@ -1,4 +1,4 @@
-use paillier::*;
+use paillier::{BigInt, *};
 
 fn main() {
     // generate a fresh keypair

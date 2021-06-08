@@ -1,9 +1,9 @@
 //! Key generation following standard recommendations.
 
-use curv::arithmetic::traits::*;
+// use curv::arithmetic::traits::*;
 
 use crate::traits::*;
-use crate::{BigInt, Keypair, Paillier};
+use crate::{bigint, BigInt, Keypair, Paillier};
 
 impl KeyGeneration<Keypair> for Paillier {
     fn keypair_with_modulus_size(bit_length: usize) -> Keypair {
@@ -32,14 +32,14 @@ impl PrimeSampable for BigInt {
         let two = &one + &one;
 
         loop {
-            let mut candidate = Self::sample(bitsize);
+            let mut candidate = bigint::sample(bitsize);
             // We flip the LSB to make sure tue candidate is odd.
             //  BitManipulation::set_bit(&mut candidate, 0, true);
-            BigInt::set_bit(&mut candidate, 0, true);
+            bigint::set_bit(&mut candidate, 0, true);
 
             // To ensure the appropiate size
             // we set the MSB of the candidate.
-            BitManipulation::set_bit(&mut candidate, bitsize - 1, true);
+            bigint::set_bit(&mut candidate, bitsize - 1, true);
             // If no prime number is found in 500 iterations,
             // restart the loop (re-seed).
             // FIXME: Why 500?
@@ -76,7 +76,7 @@ pub fn is_prime(candidate: &BigInt) -> bool {
     for p in SMALL_PRIMES.iter() {
         let prime = BigInt::from(*p);
         let r = candidate % &prime;
-        if !NumberTests::is_zero(&r) {
+        if !r.is_zero() {
             continue;
         } else {
             return false;
@@ -98,8 +98,8 @@ pub fn is_prime(candidate: &BigInt) -> bool {
 /// Perform test based on Fermat's little theorem
 /// This might be performed more than once, see Handbook of Applied Cryptography [Algorithm 4.9 p136]
 fn fermat(candidate: &BigInt) -> bool {
-    let random = BigInt::sample_below(candidate);
-    let result = BigInt::mod_pow(&random, &(candidate - &BigInt::one()), candidate);
+    let random = bigint::sample_below(candidate);
+    let result = random.powm(&(candidate - &BigInt::one()), candidate);
 
     result == BigInt::one()
 }
@@ -116,15 +116,15 @@ fn miller_rabin(candidate: &BigInt, limit: usize) -> bool {
     let two = &one + &one;
 
     for _ in 0..limit {
-        let basis = BigInt::sample_range(&two, &(candidate - &two));
-        let mut y = BigInt::mod_pow(&basis, &d, candidate);
+        let basis = bigint::sample_range(&two, &(candidate - &two));
+        let mut y = basis.powm(&d, candidate);
 
         if y == one || y == (candidate - &one) {
             continue;
         } else {
             let mut counter = BigInt::zero();
             while counter < (&s - BigInt::one()) {
-                y = BigInt::mod_pow(&y, &two, candidate);
+                y = y.powm(&two, candidate);
                 if y == one {
                     return false;
                 } else if y == candidate - &one {
@@ -147,7 +147,7 @@ fn rewrite(n: &BigInt) -> (BigInt, BigInt) {
     let mut s = BigInt::zero();
     let one = BigInt::one();
 
-    while BigInt::is_even(&d) {
+    while bigint::is_even(&d) {
         d >>= 1_usize;
         s = &s + &one;
     }

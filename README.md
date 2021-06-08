@@ -1,3 +1,8 @@
+# This fork (axelarnetwork)
+
+Quick and dirty.
+* Remove dependency on `curv` crate.
+* Port `wi_dlog_proof.rs` from `zk-paillier`.
 # Paillier
 
 [![Build Status](https://travis-ci.org/mortendahl/rust-paillier.svg)](https://travis-ci.org/mortendahl/rust-paillier)
