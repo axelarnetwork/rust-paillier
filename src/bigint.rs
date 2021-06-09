@@ -1,5 +1,5 @@
 use crate::BigInt;
-use rand::RngCore;
+use rand::{CryptoRng, RngCore};
 
 pub fn sample(bit_size: usize) -> BigInt {
     if bit_size == 0 {
@@ -8,6 +8,16 @@ pub fn sample(bit_size: usize) -> BigInt {
     let bytes = (bit_size - 1) / 8 + 1;
     let mut buf: Vec<u8> = vec![0; bytes];
     rand::thread_rng().fill_bytes(&mut buf);
+    BigInt::from(&*buf) >> (bytes * 8 - bit_size)
+}
+
+pub fn sample_with_rng(mut rng: impl CryptoRng + RngCore, bit_size: usize) -> BigInt {
+    if bit_size == 0 {
+        return BigInt::zero();
+    }
+    let bytes = (bit_size - 1) / 8 + 1;
+    let mut buf: Vec<u8> = vec![0; bytes];
+    rng.fill_bytes(&mut buf);
     BigInt::from(&*buf) >> (bytes * 8 - bit_size)
 }
 

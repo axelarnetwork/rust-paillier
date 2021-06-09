@@ -2,7 +2,7 @@ use paillier::{BigInt, *};
 
 fn main() {
     // generate a fresh keypair
-    let (ek, dk) = Paillier::keypair().keys();
+    let (ek, dk) = Paillier::keypair(rand::thread_rng()).keys();
 
     // encrypt two values
     let c1 = Paillier::encrypt(&ek, RawPlaintext::from(BigInt::from(20)));
