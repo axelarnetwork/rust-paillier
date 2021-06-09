@@ -1,7 +1,7 @@
 use paillier::*;
 
 fn main() {
-    let (ek, dk) = Paillier::keypair(rand::thread_rng()).keys();
+    let (ek, dk) = Paillier::keypair(&mut rand::thread_rng()).keys();
 
     //
     // Encryption

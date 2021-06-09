@@ -113,7 +113,7 @@ mod tests {
     #[test]
     fn test_correct_dlog_proof() {
         // should be safe primes (not sure if there is actual attack)
-        let (ek, dk) = Paillier::keypair(rand::thread_rng()).keys();
+        let (ek, dk) = Paillier::keypair(&mut rand::thread_rng()).keys();
         let one = BigInt::one();
         let S = BigInt::from(2).pow(SAMPLE_S as u32);
         // Per definition 3 in the paper we need to make sure h1 is asymmetric basis:
@@ -139,7 +139,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_bad_dlog_proof() {
-        let (ek, dk) = Paillier::keypair(rand::thread_rng()).keys();
+        let (ek, dk) = Paillier::keypair(&mut rand::thread_rng()).keys();
         let one = BigInt::one();
         let S = BigInt::from(2).pow(SAMPLE_S as u32);
         // Per definition 3 in the paper we need to make sure h1 is asymmetric basis:
@@ -166,7 +166,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_bad_dlog_proof_2() {
-        let (ek, dk) = Paillier::keypair(rand::thread_rng()).keys();
+        let (ek, dk) = Paillier::keypair(&mut rand::thread_rng()).keys();
         let one = BigInt::one();
         let S = BigInt::from(2).pow(SAMPLE_S as u32);
         // Per definition 3 in the paper we need to make sure h1 is asymmetric basis:

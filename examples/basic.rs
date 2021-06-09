@@ -4,7 +4,7 @@ fn main() {
     // first generate a fresh keypair, where
     // the encryption key can be made public
     // while the decryption key should remain private
-    let (ek, dk) = Paillier::keypair(rand::thread_rng()).keys();
+    let (ek, dk) = Paillier::keypair(&mut rand::thread_rng()).keys();
 
     // after sharing the encryption key anyone can encrypt values
     let c1 = Paillier::encrypt(&ek, 10);
