@@ -26,6 +26,34 @@ impl KeyGeneration<Keypair> for Paillier {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::SeedableRng;
+    use rand_chacha::ChaCha8Rng;
+
+    #[test]
+    fn repeatable_keygen() {
+        let seed = [3; 32];
+        let mut rng1 = ChaCha8Rng::from_seed(seed);
+        let mut rng2 = ChaCha8Rng::from_seed(seed);
+        let key_pair1 = Paillier::keypair(&mut rng1);
+        let key_pair2 = Paillier::keypair(&mut rng2);
+        assert_eq!(key_pair1, key_pair2);
+    }
+
+    #[test]
+    fn random_keygen() {
+        let seed1 = [3; 32];
+        let seed2 = [7; 32];
+        let mut rng1 = ChaCha8Rng::from_seed(seed1);
+        let mut rng2 = ChaCha8Rng::from_seed(seed2);
+        let key_pair1 = Paillier::keypair(&mut rng1);
+        let key_pair2 = Paillier::keypair(&mut rng2);
+        assert_ne!(key_pair1, key_pair2);
+    }
+}
+
 pub trait PrimeSampable {
     fn sample_prime(rng: &mut (impl CryptoRng + RngCore), bitsize: usize) -> Self;
     fn sample_safe_prime(rng: &mut (impl CryptoRng + RngCore), bitsize: usize) -> Self;
