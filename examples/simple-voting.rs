@@ -47,7 +47,7 @@ struct Clerk {
 impl Clerk {
     fn new() -> Self {
         // generate fresh keypair
-        let keypair = Paillier::keypair();
+        let keypair = Paillier::keypair(&mut rand::thread_rng());
         // extract encryption key from keypair
         let (ek, dk) = keypair.keys();
         Clerk { ek, dk }

@@ -4,35 +4,70 @@
 
 use crate::traits::*;
 use crate::{bigint, BigInt, Keypair, Paillier};
+use rand::{CryptoRng, RngCore};
 
 impl KeyGeneration<Keypair> for Paillier {
-    fn keypair_with_modulus_size(bit_length: usize) -> Keypair {
-        let p = BigInt::sample_prime(bit_length / 2);
-        let q = BigInt::sample_prime(bit_length / 2);
+    fn keypair_with_modulus_size(
+        rng: &mut (impl CryptoRng + RngCore),
+        bit_length: usize,
+    ) -> Keypair {
+        let p = BigInt::sample_prime(rng, bit_length / 2);
+        let q = BigInt::sample_prime(rng, bit_length / 2);
         Keypair { p, q }
     }
 
-    fn keypair_safe_primes_with_modulus_size(bit_length: usize) -> Keypair {
-        let p = BigInt::sample_safe_prime(bit_length / 2);
-        let q = BigInt::sample_safe_prime(bit_length / 2);
+    fn keypair_safe_primes_with_modulus_size(
+        mut rng: &mut (impl CryptoRng + RngCore),
+        bit_length: usize,
+    ) -> Keypair {
+        let p = BigInt::sample_safe_prime(&mut rng, bit_length / 2);
+        let q = BigInt::sample_safe_prime(&mut rng, bit_length / 2);
         Keypair { p, q }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::SeedableRng;
+    use rand_chacha::ChaCha8Rng;
+
+    #[test]
+    fn repeatable_keygen() {
+        let seed = [3; 32];
+        let mut rng1 = ChaCha8Rng::from_seed(seed);
+        let mut rng2 = ChaCha8Rng::from_seed(seed);
+        let key_pair1 = Paillier::keypair(&mut rng1);
+        let key_pair2 = Paillier::keypair(&mut rng2);
+        assert_eq!(key_pair1, key_pair2);
+    }
+
+    #[test]
+    fn random_keygen() {
+        let seed1 = [3; 32];
+        let seed2 = [7; 32];
+        let mut rng1 = ChaCha8Rng::from_seed(seed1);
+        let mut rng2 = ChaCha8Rng::from_seed(seed2);
+        let key_pair1 = Paillier::keypair(&mut rng1);
+        let key_pair2 = Paillier::keypair(&mut rng2);
+        assert_ne!(key_pair1, key_pair2);
     }
 }
 
 pub trait PrimeSampable {
-    fn sample_prime(bitsize: usize) -> Self;
-    fn sample_safe_prime(bitsize: usize) -> Self;
+    fn sample_prime(rng: &mut (impl CryptoRng + RngCore), bitsize: usize) -> Self;
+    fn sample_safe_prime(rng: &mut (impl CryptoRng + RngCore), bitsize: usize) -> Self;
 }
 
 impl PrimeSampable for BigInt {
-    fn sample_prime(bitsize: usize) -> Self {
+    fn sample_prime(rng: &mut (impl CryptoRng + RngCore), bitsize: usize) -> Self {
         // See Practical Considerations section inside the section 11.5 "Prime Number Generation"
         // Applied Cryptography, Bruce Schneier.
         let one = BigInt::one();
         let two = &one + &one;
 
         loop {
-            let mut candidate = bigint::sample(bitsize);
+            let mut candidate = bigint::sample_with_rng(rng, bitsize);
             // We flip the LSB to make sure tue candidate is odd.
             //  BitManipulation::set_bit(&mut candidate, 0, true);
             bigint::set_bit(&mut candidate, 0, true);
@@ -52,11 +87,11 @@ impl PrimeSampable for BigInt {
         }
     }
 
-    fn sample_safe_prime(bitsize: usize) -> Self {
+    fn sample_safe_prime(rng: &mut (impl CryptoRng + RngCore), bitsize: usize) -> Self {
         // q = 2p + 1;
         let two = BigInt::from(2);
         loop {
-            let q = PrimeSampable::sample_prime(bitsize);
+            let q = PrimeSampable::sample_prime(rng, bitsize);
             let p = (&q - BigInt::one()).div_floor(&two);
             if is_prime(&p) {
                 return q;

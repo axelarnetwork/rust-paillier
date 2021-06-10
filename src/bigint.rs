@@ -1,5 +1,5 @@
 use crate::BigInt;
-use rand::RngCore;
+use rand::{CryptoRng, RngCore};
 
 pub fn sample(bit_size: usize) -> BigInt {
     if bit_size == 0 {
@@ -8,6 +8,16 @@ pub fn sample(bit_size: usize) -> BigInt {
     let bytes = (bit_size - 1) / 8 + 1;
     let mut buf: Vec<u8> = vec![0; bytes];
     rand::thread_rng().fill_bytes(&mut buf);
+    BigInt::from(&*buf) >> (bytes * 8 - bit_size)
+}
+
+pub fn sample_with_rng(rng: &mut (impl CryptoRng + RngCore), bit_size: usize) -> BigInt {
+    if bit_size == 0 {
+        return BigInt::zero();
+    }
+    let bytes = (bit_size - 1) / 8 + 1;
+    let mut buf: Vec<u8> = vec![0; bytes];
+    rng.fill_bytes(&mut buf);
     BigInt::from(&*buf) >> (bytes * 8 - bit_size)
 }
 
@@ -62,25 +72,3 @@ where
 {
     Option::<T>::from(n).unwrap_or_else(|| panic!("conversion from bigint failed"))
 }
-
-// impl TryFrom<&BigInt> for u64 {
-//     type Error = TryFromBigIntError;
-
-//     fn try_from(value: &BigInt) -> Result<Self, Self::Error> {
-//         Option::<u64>::from(&value.gmp).ok_or(TryFromBigIntError { type_name: "u64" })
-//     }
-// }
-
-// /// Error type returned when conversion from BigInt to primitive integer type (u64, i64, etc) fails
-// #[derive(Debug)]
-// pub struct TryFromBigIntError {
-//     pub(super) type_name: &'static str,
-// }
-
-// impl fmt::Display for TryFromBigIntError {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "conversion from BigInt to {} overflowed", self.type_name)
-//     }
-// }
-
-// impl error::Error for TryFromBigIntError {}
