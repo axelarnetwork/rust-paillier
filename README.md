@@ -3,6 +3,8 @@
 Quick and dirty.
 * Remove dependency on `curv` crate.
 * Port `wi_dlog_proof.rs` from `zk-paillier`.
+* Require a user-supplied pseudorandom number generator for keygen.
+
 # Paillier
 
 [![Build Status](https://travis-ci.org/mortendahl/rust-paillier.svg)](https://travis-ci.org/mortendahl/rust-paillier)
