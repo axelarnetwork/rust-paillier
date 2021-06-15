@@ -28,13 +28,13 @@ const K: usize = 128;
 const K_PRIME: usize = 128;
 const SAMPLE_S: usize = 256;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, PartialEq, Deserialize, Clone)]
 pub struct CompositeDLogProof {
     pub x: BigInt,
     pub y: BigInt,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, PartialEq, Deserialize, Clone)]
 pub struct DLogStatement {
     pub N: BigInt,
     pub g: BigInt,
