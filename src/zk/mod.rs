@@ -23,9 +23,9 @@ pub use self::wi_dlog_proof::*;
 // mod correct_key;
 // pub use self::correct_key::CorrectKey;
 
-// mod correct_key_ni;
-// pub use self::correct_key_ni::CorrectKeyProofError;
-// pub use self::correct_key_ni::NICorrectKeyProof;
+mod correct_key_ni;
+pub use self::correct_key_ni::CorrectKeyProofError;
+pub use self::correct_key_ni::NICorrectKeyProof;
 // mod range_proof;
 // pub use self::range_proof::RangeProof;
 // pub use self::range_proof::RangeProofTrait;
