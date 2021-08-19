@@ -4,6 +4,7 @@
 
 use crate::traits::*;
 use crate::{bigint, BigInt, Keypair, Paillier};
+use gmp::mpz::ProbabPrimeResult;
 use rand::{CryptoRng, RngCore};
 
 impl KeyGeneration<Keypair> for Paillier {
@@ -87,15 +88,32 @@ impl PrimeSampable for BigInt {
         }
     }
 
+    /// Generate a safe prime with `size` bits
+    /// Adapted from https://github.com/mikelodder7/unknown_order/blob/340d3aa0f7ca915ba1db50bbaf5ed7ae18fc5e0e/src/gmp_backend.rs#L242
+    /// Changes made:
+    /// GMP's RNG is not cryptographically secure
+    /// Made resampling probability negligible
+    /// Increased primality test rounds
+    /// Removed unnecessary allocations
+    /// About 3x of speedup
     fn sample_safe_prime(rng: &mut (impl CryptoRng + RngCore), bitsize: usize) -> Self {
-        // q = 2p + 1;
-        let two = BigInt::from(2);
+        let mut p = bigint::sample_with_rng(rng, bitsize - 1);
+
         loop {
-            let q = PrimeSampable::sample_prime(rng, bitsize);
-            let p = (&q - BigInt::one()).div_floor(&two);
-            if is_prime(&p) {
-                return q;
-            };
+            // TODO: Safe primes are 2 (mod 3). We don't need to generate primes that are 1 (mod 3)
+            p = p.nextprime();
+            p <<= 1;
+            p += 1;
+
+            // Keep the number of Miller-Rabin rounds high since
+            // a non-negligible false positive will affect key recovery
+            if let ProbabPrimeResult::Prime | ProbabPrimeResult::ProbablyPrime = p.probab_prime(25) {
+                return p;
+            }
+
+            // TODO: Also test if (p - 1)/2 is prime. Explore how to make this actually faster
+
+            p >>= 1;
         }
     }
 }

@@ -189,7 +189,7 @@ impl<'b> From<RawCiphertext<'b>> for BigInt {
 
 impl<'m, 'd> Encrypt<EncryptionKey, RawPlaintext<'m>, RawCiphertext<'d>> for Paillier {
     fn encrypt(ek: &EncryptionKey, m: RawPlaintext<'m>) -> RawCiphertext<'d> {
-        let r = Randomness::sample(&ek);
+        let r = Randomness::sample(ek);
         let rn = r.0.powm(&ek.n, &ek.nn);
         let gm: BigInt = (m.0.borrow() as &BigInt * &ek.n + 1) % &ek.nn;
         let c = (gm * rn) % &ek.nn;
@@ -612,7 +612,7 @@ mod tests {
     fn test_failing_deserialize() {
         let illformatted = "{\"n\":\"12345abcdef\"}";
 
-        let result: Result<EncryptionKey, _> = serde_json::from_str(&illformatted);
+        let result: Result<EncryptionKey, _> = serde_json::from_str(illformatted);
         assert!(result.is_err())
     }
 }

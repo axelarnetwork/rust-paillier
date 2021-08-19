@@ -11,14 +11,24 @@ pub fn sample(bit_size: usize) -> BigInt {
     BigInt::from(&*buf) >> (bytes * 8 - bit_size)
 }
 
+/// Sample a number of bit length bit_size
 pub fn sample_with_rng(rng: &mut (impl CryptoRng + RngCore), bit_size: usize) -> BigInt {
     if bit_size == 0 {
         return BigInt::zero();
     }
+
     let bytes = (bit_size - 1) / 8 + 1;
     let mut buf: Vec<u8> = vec![0; bytes];
+
     rng.fill_bytes(&mut buf);
-    BigInt::from(&*buf) >> (bytes * 8 - bit_size)
+
+    let mut p = BigInt::from(buf.as_ref());
+    p >>= bytes * 8 - bit_size;
+
+    // Set the MSB to 1 to get full bit length
+    p.setbit(bit_size - 1);
+
+    p
 }
 
 pub fn sample_below(upper: &BigInt) -> BigInt {
