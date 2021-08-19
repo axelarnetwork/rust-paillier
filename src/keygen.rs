@@ -4,7 +4,7 @@
 
 use crate::traits::*;
 use crate::{bigint, BigInt, Keypair, Paillier};
-use gmp::mpz::ProbabPrimeResult;
+use gmp::mpz::{Mpz, ProbabPrimeResult};
 use rand::{CryptoRng, RngCore};
 
 impl KeyGeneration<Keypair> for Paillier {
@@ -88,20 +88,25 @@ impl PrimeSampable for BigInt {
         }
     }
 
-    /// Generate a safe prime with `size` bits
+    /// Generate a safe prime with `size - 1` or `size` bits
     /// Adapted from https://github.com/mikelodder7/unknown_order/blob/340d3aa0f7ca915ba1db50bbaf5ed7ae18fc5e0e/src/gmp_backend.rs#L242
     /// Changes made:
     /// GMP's RNG is not cryptographically secure
     /// Made resampling probability negligible
     /// Increased primality test rounds
+    /// Also test if (p - 1)/2 is prime. This adds a 2x speedup.
+    /// NOTE: This optimization makes it possible to return safe_primes that are bitsize - 1 in length.
     /// Removed unnecessary allocations
-    /// About 3x of speedup
+    /// About 5x of speedup
     fn sample_safe_prime(rng: &mut (impl CryptoRng + RngCore), bitsize: usize) -> Self {
         let mut p = bigint::sample_with_rng(rng, bitsize - 1);
 
         loop {
             // TODO: Safe primes are 2 (mod 3). We don't need to generate primes that are 1 (mod 3)
+            // orig_p
             p = p.nextprime();
+
+            // 2 orig_p + 1
             p <<= 1;
             p += 1;
 
@@ -111,9 +116,23 @@ impl PrimeSampable for BigInt {
                 return p;
             }
 
-            // TODO: Also test if (p - 1)/2 is prime. Explore how to make this actually faster
+            // Skip the following if (orig_p - 1)/2 is even
+            if !p.tstbit(2) {
+                p >>= 1;
+                continue;
+            }
 
-            p >>= 1;
+            // (orig_p - 1)/2
+            p >>= 2;
+            let is_prime_res = p.probab_prime(25);
+
+            // orig_p
+            p <<= 1;
+            p += 1;
+
+            if let ProbabPrimeResult::Prime | ProbabPrimeResult::ProbablyPrime = is_prime_res {
+                return p;
+            }
         }
     }
 }
