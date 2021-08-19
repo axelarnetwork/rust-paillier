@@ -59,7 +59,7 @@ impl CompositeDLogProof {
         );
         let y = bigint::mod_add(
             &r,
-            &(bigint::mod_mul(&e, secret, &&statement.N)),
+            &(bigint::mod_mul(&e, secret, &statement.N)),
             &statement.N,
         );
         CompositeDLogProof { x, y }
