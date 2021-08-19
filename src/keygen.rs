@@ -4,7 +4,7 @@
 
 use crate::traits::*;
 use crate::{bigint, BigInt, Keypair, Paillier};
-use gmp::mpz::{Mpz, ProbabPrimeResult};
+use gmp::mpz::ProbabPrimeResult;
 use rand::{CryptoRng, RngCore};
 
 impl KeyGeneration<Keypair> for Paillier {
@@ -112,7 +112,8 @@ impl PrimeSampable for BigInt {
 
             // Keep the number of Miller-Rabin rounds high since
             // a non-negligible false positive will affect key recovery
-            if let ProbabPrimeResult::Prime | ProbabPrimeResult::ProbablyPrime = p.probab_prime(25) {
+            if let ProbabPrimeResult::Prime | ProbabPrimeResult::ProbablyPrime = p.probab_prime(25)
+            {
                 return p;
             }
 
